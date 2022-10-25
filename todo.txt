@@ -1,8 +1,0 @@
-## TODO
-
-* Huvudsida med lista över inlägg
-  * Titel, Ingress, Datum, Länk
-  * Länk går till hela inlägget
-
-* Inlägg 
-  * Omvandla .md till .html
