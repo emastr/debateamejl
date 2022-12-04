@@ -30,12 +30,20 @@
   &:hover{
     color:$background-color;
     //background-color: $text-color;
-    background: linear-gradient(90deg, $background-color, $text-color);
     text-decoration: none;
-
+    //background-color: $text-color;
+    background: linear-gradient(90deg,  $text-color,  $text-color, $background-color, $background-color);
+    background-size: 300% 100%;
+    animation: gradient-title .3s linear;
+    animation-fill-mode: forwards;
     img {
       filter: invert(100%);
     }
+  }
+
+  @keyframes gradient-title {
+    from {background-position-x: 100%}
+    to {background-position-x: 0%}
   }
 }
 
