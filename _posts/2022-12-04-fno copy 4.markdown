@@ -1,11 +1,12 @@
 ---
 layout: post
-title:  "Fourier Neural Operator"
+title:  "Fourier Neural Operator 3"
 date:   2022-10-25 23:34:51 +0200
 categories: fno ml neural nn
 author: Emanuel
 featured: true
-thumbnail: "assets/posts/output_16_1.png"
+thumbnail: "assets/posts/output_16_3.png"
+description: "Showcase of FNO on riesz representor data."
 ---
 ## Micro Domain
 

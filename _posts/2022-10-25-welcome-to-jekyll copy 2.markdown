@@ -1,8 +1,10 @@
 ---
 layout: post
-title:  "Welcome to Jekyll 2!"
+title:  "Welcome to Jekyll!"
 date:   2022-10-25 23:34:51 +0200
 categories: jekyll update
+featured: false
+description: "Short introduction on how to use posts. You’ll find this post in your `_posts` directory."
 ---
 You’ll find this post in your `_posts` directory. Go ahead and edit it and re-build the site to see your changes. You can rebuild the site in many different ways, but the most common way is to run `jekyll serve`, which launches a web server and auto-regenerates your site when a file is updated.
 

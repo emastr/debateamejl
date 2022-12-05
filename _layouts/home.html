@@ -10,6 +10,13 @@ layout: default
   {{ content }}
 
   {%- if site.posts.size > 0 -%}
+    <!-- Check if there are featured posts -->
+    {%- assign  featured_posts = site.posts | where: "featured", true -%}
+    {%- if featured_posts.size > 0 -%}
+      {%- include featured.html -%}
+    {%-endif -%}
+
+    <!-- List all posts -->
     <h2 class="post-list-heading">{{ page.list_title | default: "Posts" }}</h2>
     <ul class="post-list">
       {%- for post in site.posts -%}
