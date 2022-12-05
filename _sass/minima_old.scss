@@ -10,8 +10,8 @@ $base-line-height: 1.5 !default;
 
 $spacing-unit:     30px !default;
 
-$text-color:       rgb(41, 57, 95) !default;
-$background-color: #f8fffc !default;
+$text-color:       #111 !default;
+$background-color: #fdfdfd !default;
 $brand-color:      #2a7ae2 !default;
 
 $grey-color:       #828282 !default;
@@ -21,7 +21,7 @@ $grey-color-dark:  darken($grey-color, 25%) !default;
 $table-text-align: left !default;
 
 // Width of the content area
-$content-width:    1200px !default;
+$content-width:    800px !default;
 
 $on-palm:          600px !default;
 $on-laptop:        800px !default;
@@ -45,7 +45,7 @@ $on-laptop:        800px !default;
 
 // Import partials.
 @import
-  "custom/base",
-  "custom/layout",
-  "custom/syntax-highlighting"
+  "minima/base",
+  "minima/layout",
+  "minima/syntax-highlighting"
 ;

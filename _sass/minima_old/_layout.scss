@@ -30,20 +30,12 @@
   &:hover{
     color:$background-color;
     //background-color: $text-color;
+    background: linear-gradient(90deg, $background-color, $text-color);
     text-decoration: none;
-    background-color: $text-color;
-    // background: linear-gradient(90deg,  $text-color,  $text-color, $background-color, $background-color);
-    // background-size: 300% 100%;
-    // animation: gradient-title .3s linear;
-    // animation-fill-mode: forwards;
+
     img {
       filter: invert(100%);
     }
-  }
-
-  @keyframes gradient-title {
-    from {background-position-x: 100%}
-    to {background-position-x: 0%}
   }
 }
 
@@ -129,87 +121,6 @@
       margin-left: 20px;
     }
   }
-}
-
-
-.featured-nav {
-  // float: left;
-  // height: 500px;
-  padding-bottom: 40px;
-
-  .featured-thumbnail {
-    background-color: $background-color;
-    width: 24%;
-    height: 300px;
-    float: left;
-    margin-right: 1%;
-    margin-bottom: 5px;
-    position: relative;
-    overflow: hidden;
-    border-radius: 3%;
-
-    // Gaps between nav items, but not on the last one
-    &:not(:last-child) {
-      margin-right: 5px;
-    }
-
-    img {
-      width:100%;
-      height:100%;
-      opacity: 0.7;
-      object-fit: cover;
-      // overflow: hidden;
-    }
-
-    &:hover {
-      box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
-    }
-
-    .featured-title {
-      color: $text-color;
-      text-align: center;
-    }
-
-    .featured-overlay {
-      position: absolute;
-      top: 0; 
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: 100%;
-      width: 100%;
-      overflow: hidden;
-      // opacity: 0;
-      background-color: $text-color;
-      transition: .5s ease;
-      transform: translate(-100%, 0%) ;
-    }
-
-    .featured-meta {
-      font-size: $small-font-size;
-      color: $grey-color-light;
-    }
-    
-
-    &:hover .featured-overlay {
-      // opacity: 1;
-      // width: 100%;
-      transform: translate(0%, 0%);
-    }
-
-    .featured-text {
-      color: $background-color;
-      position: absolute;
-      overflow: hidden;
-      top: 50%;
-      left: 50%;
-      width: 90%;
-      height: 90%;
-      transform: translate(-50%, -50%);
-      // -ms-transform: translate(-50%,-50%);
-    }
-  }
-  @extend %clearfix;
 }
 
 
