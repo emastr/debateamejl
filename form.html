@@ -1,0 +1,20 @@
+---
+title: WASP form
+layout: wasp
+---
+
+<div>
+  <img src="{{ 'assets/banner2.png' | relative_url }}" alt="icon" style="padding:10px;float:left;width:800px">
+</div>
+<div id="63f2b1f14c78627906ef7bee"></div>
+<script type="text/javascript" src="https://www.kth.se/form/webform/niseko/webformloader.js"></script>
+<script type="text/javascript">
+  window.addEventListener('load', function () {
+    var options = {};
+    options.tags = [];
+    // options.tags = [{ name: 'tagName1', value: 'value1' }, { name: 'tagName2', value: 'value2' }];
+    // options.cssUrl = 'http://www.../other.css';
+    options.host = 'https://www.kth.se';
+    getEmbeddedForm("63f2b1f14c78627906ef7bee", options);
+  }, { once: true });
+</script>
