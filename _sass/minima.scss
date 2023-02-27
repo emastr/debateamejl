@@ -10,11 +10,18 @@ $base-line-height: 1.5 !default;
 
 $spacing-unit:     30px !default;
 
-$text-color:       rgb(248, 248, 248) !default;
-$background-color: #50505c !default;
-$brand-color:      #2a7ae2 !default;
+$text-color:       rgb(244, 244, 244) !default;
+$background-color: #131313 !default;
+$brand-color:      #87a2c5 !default;
 
-$grey-color:       #828282 !default;
+$palette-0: rgb(180, 64, 64) !default;
+$palette-1: rgb(95, 206, 104) !default;
+$palette-2: rgb(69, 64, 142) !default;
+$palette-3: rgb(255, 145, 0) !default;
+$palette-4: rgb(47, 191, 155) !default;
+
+
+$grey-color:       #c1c1c1 !default;
 $grey-color-light: lighten($grey-color, 40%) !default;
 $grey-color-dark:  darken($grey-color, 25%) !default;
 
@@ -33,6 +40,7 @@ $on-laptop:        800px !default;
 //     padding-left: $spacing-unit / 2;
 //   }
 // }
+
 @mixin media-query($device) {
   @media screen and (max-width: $device) {
     @content;
@@ -41,6 +49,16 @@ $on-laptop:        800px !default;
 
 @mixin relative-font-size($ratio) {
   font-size: $base-font-size * $ratio;
+}
+
+:root {
+  --palette-0: rgb(180, 64, 64);
+  --palette-1: rgb(95, 206, 104);
+  --palette-2: rgb(69, 64, 142);
+  --palette-3: rgb(255, 145, 0);
+  --palette-4: rgb(47, 191, 155);
+  --background: #131313;
+  --textcolor: rgb(235, 235, 235);
 }
 
 // Import partials.

@@ -1,16 +1,19 @@
+$code_bg: #252838;
+
+
 /**
  * Syntax highlighting styles
  */
 .highlight {
-  background: #fff;
+  background: #000000;
   @extend %vertical-rhythm;
 
   .highlighter-rouge & {
-    background: #eef;
+    background: $code_bg;
   }
-
+  code  { background-color: $code_bg;}
   .c     { color: #998; font-style: italic } // Comment
-  .err   { color: #a61717; background-color: #e3d2d2 } // Error
+  .err   { color: #a61717; background-color: $code_bg} // Error
   .k     { font-weight: bold } // Keyword
   .o     { font-weight: bold } // Operator
   .cm    { color: #998; font-style: italic } // Comment.Multiline
@@ -22,7 +25,7 @@
   .ge    { font-style: italic } // Generic.Emph
   .gr    { color: #a00 } // Generic.Error
   .gh    { color: #999 } // Generic.Heading
-  .gi    { color: #000; background-color: #dfd } // Generic.Inserted
+  .gi    { color: #000; background-color: rgb(255, 0, 0) } // Generic.Inserted
   .gi .x { color: #000; background-color: #afa } // Generic.Inserted.Specific
   .go    { color: #888 } // Generic.Output
   .gp    { color: #555 } // Generic.Prompt
