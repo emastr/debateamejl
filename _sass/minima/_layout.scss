@@ -1,7 +1,7 @@
 /**
  * Site header
  */
-.site-header {
+ .site-header {
   //border-top: 5px solid $grey-color-dark;
   //border-bottom: 1px solid $grey-color-light;
   min-height: $spacing-unit * 1.865;
@@ -27,17 +27,22 @@
     color: $grey-color-dark;
   }
 
+  img {
+    filter: invert(100%);
+  }
+
   &:hover{
     color:$background-color;
     //background-color: $text-color;
     text-decoration: none;
-    background-color: $text-color;
+    //background-color: $grey-color-dark;
+    //$text-color;
     // background: linear-gradient(90deg,  $text-color,  $text-color, $background-color, $background-color);
     // background-size: 300% 100%;
     // animation: gradient-title .3s linear;
     // animation-fill-mode: forwards;
     img {
-      filter: invert(100%);
+      filter: invert(0%);
     }
   }
 
