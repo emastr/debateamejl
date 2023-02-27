@@ -31,6 +31,11 @@ url: "" # the base hostname & protocol for your site, e.g. http://example.com
 plugins:
   - jekyll-feed
   - jekyll-seo-tag
+  - jekyll-coffeescript
+
+# markdown: kramdown
+# kramdown:
+#    math_engine: mathjax
 
 # Exclude from processing.
 # The following items will not be processed, by default.

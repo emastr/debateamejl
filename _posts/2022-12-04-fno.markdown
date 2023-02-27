@@ -5,7 +5,8 @@ date:   2022-10-25 23:34:51 +0200
 categories: fno ml neural nn
 author: Emanuel
 featured: true
-thumbnail: "assets/posts/output_16_1.png"
+thumbnail: "assets/posts/thumb1.png"
+description: "Fourier Neural Operator. Nuff said."
 ---
 ## Micro Domain
 

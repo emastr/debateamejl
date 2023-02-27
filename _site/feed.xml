@@ -1,241 +1,219 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.0">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2023-02-20T02:52:02+01:00</updated><id>http://localhost:4000/feed.xml</id><title type="html">Debate-A-Mejl</title><subtitle>Some fun projects in various topics.</subtitle><entry><title type="html">Fourier Neural Operator</title><link href="http://localhost:4000/fno/ml/neural/nn/2022/10/25/fno.html" rel="alternate" type="text/html" title="Fourier Neural Operator" /><published>2022-10-25T23:34:51+02:00</published><updated>2022-10-25T23:34:51+02:00</updated><id>http://localhost:4000/fno/ml/neural/nn/2022/10/25/fno</id><content type="html" xml:base="http://localhost:4000/fno/ml/neural/nn/2022/10/25/fno.html"><![CDATA[<h2 id="micro-domain">Micro Domain</h2>
-
-<p>The micro domain is defined by a bounding box and a smooth function parameterising the floor of the micro domain.</p>
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.0">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2023-02-27T02:32:27+01:00</updated><id>http://localhost:4000/feed.xml</id><title type="html">Debate-A-Mejl</title><subtitle>Some fun projects in various topics.</subtitle><entry><title type="html">HMM Stokes</title><link href="http://localhost:4000/hmm/solver/iterative/2023/02/26/hmm_stokes.html" rel="alternate" type="text/html" title="HMM Stokes" /><published>2023-02-26T22:34:51+01:00</published><updated>2023-02-26T22:34:51+01:00</updated><id>http://localhost:4000/hmm/solver/iterative/2023/02/26/hmm_stokes</id><content type="html" xml:base="http://localhost:4000/hmm/solver/iterative/2023/02/26/hmm_stokes.html"><![CDATA[<h2 id="stokes-flow-in-periodic-channel-with-robin-boundary">Stokes Flow in Periodic Channel with Robin boundary.</h2>
 
 <div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">sys</span>
 <span class="n">sys</span><span class="p">.</span><span class="n">path</span><span class="p">.</span><span class="n">append</span><span class="p">(</span><span class="s">'/home/emastr/phd/'</span><span class="p">)</span>
 
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">import</span> <span class="nn">time</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="n">np</span>
-<span class="kn">import</span> <span class="nn">torch</span> <span class="k">as</span> <span class="n">pt</span>
-<span class="kn">import</span> <span class="nn">torch.autograd</span> <span class="k">as</span> <span class="n">agrad</span>
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="n">plt</span>
+<span class="kn">from</span> <span class="nn">stokes2d.robin_solver</span> <span class="kn">import</span> <span class="n">testSolve</span><span class="p">,</span> <span class="n">solveRobinStokes_fromFunc</span>
 <span class="kn">from</span> <span class="nn">util.plot_tools</span> <span class="kn">import</span> <span class="o">*</span>
-<span class="kn">from</span> <span class="nn">architecture.fno_1d</span> <span class="kn">import</span> <span class="o">*</span>
-<span class="kn">from</span> <span class="nn">boundary_solvers.blobs</span> <span class="kn">import</span> <span class="o">*</span>
-<span class="kn">from</span> <span class="nn">boundary_solvers.geometry</span> <span class="kn">import</span> <span class="o">*</span>
-<span class="kn">from</span> <span class="nn">scipy.sparse.linalg</span> <span class="kn">import</span> <span class="n">gmres</span><span class="p">,</span> <span class="n">LinearOperator</span>
-<span class="kn">from</span> <span class="nn">operators.stokes_operator</span> <span class="kn">import</span> <span class="n">StokesAdjointBoundaryOp</span>
-<span class="kn">from</span> <span class="nn">util.unet</span> <span class="kn">import</span> <span class="o">*</span>
-<span class="kn">import</span> <span class="nn">torch.nn</span> <span class="k">as</span> <span class="n">nn</span>
+<span class="kn">from</span> <span class="nn">boundary_solvers.geometry</span> <span class="kn">import</span> <span class="n">MacroGeom</span>
 </code></pre></div></div>
 
-<h2 id="create-data-loader">Create data loader</h2>
+<h2 id="multiscale-problem">Multiscale Problem</h2>
 
-<p>Load and transform the data.</p>
+<p>We define a multiscale problem as follows. The PDE is a non-slip zero forcing Stokes flow Problem</p>
 
-<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">unpack_data</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
-    <span class="n">xlabels</span> <span class="o">=</span> <span class="p">[</span><span class="s">'x'</span><span class="p">,</span> <span class="s">'y'</span><span class="p">,</span> <span class="s">'dx'</span><span class="p">,</span> <span class="s">'dy'</span><span class="p">,</span> <span class="s">'ddx'</span><span class="p">,</span> <span class="s">'ddy'</span><span class="p">,</span> <span class="s">'vx'</span><span class="p">,</span> <span class="s">'vy'</span><span class="p">,</span> <span class="s">'w'</span><span class="p">,</span> <span class="s">'t'</span><span class="p">]</span>
-    <span class="n">ylabels</span> <span class="o">=</span> <span class="p">[</span><span class="s">'rx'</span><span class="p">,</span> <span class="s">'ry'</span><span class="p">]</span>
-    <span class="n">inp</span> <span class="o">=</span> <span class="p">{</span><span class="n">xlabels</span><span class="p">[</span><span class="n">i</span><span class="p">]:</span> <span class="n">data</span><span class="p">[</span><span class="s">'X'</span><span class="p">][:,</span> <span class="n">i</span><span class="p">,</span> <span class="p">:]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">)}</span>
-    <span class="n">out</span> <span class="o">=</span> <span class="p">{</span><span class="n">ylabels</span><span class="p">[</span><span class="n">i</span><span class="p">]:</span> <span class="n">data</span><span class="p">[</span><span class="s">'Y'</span><span class="p">][:,</span> <span class="n">i</span><span class="p">,</span> <span class="p">:]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">)}</span>
-    <span class="k">return</span> <span class="p">(</span><span class="n">inp</span><span class="p">,</span> <span class="n">out</span><span class="p">)</span>
+\[\Delta u  - \nabla p = 0, \qquad \qquad \nabla \cdot u = 0   \qquad \text{inside}\quad \Omega\]
 
-<span class="k">def</span> <span class="nf">unpack</span><span class="p">(</span><span class="n">transform</span><span class="p">):</span>
-    <span class="s">"""Decorator for if a method is supposed to act on the values of a dict."""</span>
-    <span class="k">def</span> <span class="nf">up_transform</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">==</span> <span class="nb">dict</span><span class="p">:</span>
-            <span class="k">return</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">transform</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">data</span><span class="p">.</span><span class="n">keys</span><span class="p">()}</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">transform</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">up_transform</span>
+<p>with the boundary conditions</p>
 
-<span class="o">@</span><span class="n">unpack</span>
-<span class="k">def</span> <span class="nf">subsample</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">idx</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">x</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+\[u = g,\qquad \text{on}\quad\partial\Omega\]
 
-<span class="o">@</span><span class="n">unpack</span>
-<span class="k">def</span> <span class="nf">integrate</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">w</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">torch</span><span class="p">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">x</span> <span class="o">*</span> <span class="n">w</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">.</span><span class="n">shape</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+<p>the boundary is a two-dimensional pipe with corners at (0,-1) and (1,1), and a micro scale boundary:</p>
 
-<span class="k">def</span> <span class="nf">subdict</span><span class="p">(</span><span class="n">dic</span><span class="p">,</span> <span class="n">keys</span><span class="p">):</span>
-    <span class="k">return</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">dic</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">keys</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">dic</span><span class="p">.</span><span class="n">keys</span><span class="p">()}</span>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">from</span> <span class="nn">hmm.stokes</span> <span class="kn">import</span> <span class="n">StokesMacProb</span><span class="p">,</span> <span class="n">StokesMicProb</span><span class="p">,</span> <span class="n">trig_interp</span><span class="p">,</span> <span class="n">StokesData</span><span class="p">,</span> <span class="n">StokesHMMProblem</span>
+<span class="kn">from</span> <span class="nn">hmm.stokes</span> <span class="kn">import</span> <span class="n">MacroSolver</span><span class="p">,</span> <span class="n">MicroSolver</span><span class="p">,</span> <span class="n">IterativeHMMSolver</span>
+<span class="kn">from</span> <span class="nn">util.plot_tools</span> <span class="kn">import</span> <span class="o">*</span>
 
-<span class="k">def</span> <span class="nf">concat_dict_entries</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">torch</span><span class="p">.</span><span class="n">cat</span><span class="p">(</span><span class="nb">tuple</span><span class="p">((</span><span class="n">d</span><span class="p">[:,</span> <span class="bp">None</span><span class="p">,</span> <span class="p">:]</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">data</span><span class="p">.</span><span class="n">values</span><span class="p">())),</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-    
-<span class="k">def</span> <span class="nf">arclength</span><span class="p">(</span><span class="n">dx</span><span class="p">,</span> <span class="n">dy</span><span class="p">,</span> <span class="n">w</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">integrate</span><span class="p">((</span><span class="n">dx</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">dy</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">**</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">w</span><span class="p">)</span>    
+<span class="n">eps</span> <span class="o">=</span> <span class="mf">0.02</span>
+<span class="n">k</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="mi">1</span> <span class="o">/</span> <span class="n">eps</span> <span class="o">/</span> <span class="mi">4</span><span class="p">)</span> <span class="o">*</span> <span class="mi">4</span>
 
-<span class="k">def</span> <span class="nf">normalize</span><span class="p">(</span><span class="n">dx</span><span class="p">,</span> <span class="n">dy</span><span class="p">):</span>
-    <span class="s">"""Normalize 2-dim vector"""</span>
-    <span class="n">mag</span> <span class="o">=</span> <span class="p">(</span><span class="n">dx</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">dy</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">**</span><span class="mf">0.5</span>
-    <span class="k">return</span> <span class="n">dx</span><span class="o">/</span><span class="n">mag</span><span class="p">,</span> <span class="n">dy</span><span class="o">/</span><span class="n">mag</span>
-    
-<span class="k">def</span> <span class="nf">curvature</span><span class="p">(</span><span class="n">dx</span><span class="p">,</span> <span class="n">dy</span><span class="p">,</span> <span class="n">ddx</span><span class="p">,</span> <span class="n">ddy</span><span class="p">):</span>
-    <span class="s">"""Find curvature of line segment given points"""</span>
-    <span class="n">mag</span> <span class="o">=</span> <span class="p">(</span><span class="n">dx</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">dy</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">**</span><span class="mf">0.5</span>
-    <span class="k">return</span> <span class="p">(</span><span class="n">dx</span> <span class="o">*</span> <span class="n">ddy</span> <span class="o">-</span> <span class="n">dy</span> <span class="o">*</span> <span class="n">ddx</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">mag</span> <span class="o">**</span> <span class="mi">3</span><span class="p">)</span>
+<span class="n">A</span> <span class="o">=</span> <span class="mf">0.5</span>
+<span class="n">h</span> <span class="o">=</span> <span class="mf">1.5</span>
+<span class="n">f</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">eps</span> <span class="o">*</span> <span class="p">(</span><span class="o">-</span><span class="n">h</span> <span class="o">+</span> <span class="n">A</span> <span class="o">*</span> <span class="n">np</span><span class="p">.</span><span class="n">cos</span><span class="p">(</span><span class="n">k</span><span class="o">*</span><span class="n">x</span><span class="p">))</span> <span class="c1">#1.6
+</span><span class="n">df</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="o">-</span><span class="n">eps</span> <span class="o">*</span> <span class="n">k</span> <span class="o">*</span> <span class="n">np</span><span class="p">.</span><span class="n">sin</span><span class="p">(</span><span class="n">k</span><span class="o">*</span><span class="n">x</span><span class="p">)</span> <span class="o">*</span> <span class="n">A</span>
+<span class="n">ddf</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="o">-</span><span class="n">eps</span> <span class="o">*</span> <span class="p">(</span><span class="n">k</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="p">.</span><span class="n">cos</span><span class="p">(</span><span class="n">k</span><span class="o">*</span><span class="n">x</span><span class="p">)</span> <span class="o">*</span> <span class="n">A</span>
+<span class="n">g</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="mi">1</span><span class="o">+</span><span class="n">np</span><span class="p">.</span><span class="n">sin</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="p">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">x</span><span class="p">)</span> <span class="o">*</span> <span class="mf">0.0</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">StokesData</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">ddf</span><span class="p">,</span> <span class="n">g</span><span class="p">)</span>
 
-<span class="k">def</span> <span class="nf">invariant_quantities</span><span class="p">(</span><span class="n">inp</span><span class="p">):</span>
-    <span class="n">labels</span> <span class="o">=</span> <span class="p">(</span><span class="s">'tx'</span><span class="p">,</span> <span class="s">'ty'</span><span class="p">,</span> <span class="s">'c'</span><span class="p">)</span>
-    <span class="n">tx</span><span class="p">,</span> <span class="n">ty</span> <span class="o">=</span> <span class="n">normalize</span><span class="p">(</span><span class="n">inp</span><span class="p">[</span><span class="s">'dx'</span><span class="p">],</span> <span class="n">inp</span><span class="p">[</span><span class="s">'dy'</span><span class="p">])</span>
-    <span class="n">c</span> <span class="o">=</span> <span class="n">curvature</span><span class="p">(</span><span class="n">inp</span><span class="p">[</span><span class="s">'dx'</span><span class="p">],</span> <span class="n">inp</span><span class="p">[</span><span class="s">'dy'</span><span class="p">],</span> <span class="n">inp</span><span class="p">[</span><span class="s">'ddx'</span><span class="p">],</span> <span class="n">inp</span><span class="p">[</span><span class="s">'ddy'</span><span class="p">])</span>
-    <span class="n">data</span> <span class="o">=</span> <span class="p">(</span><span class="n">tx</span><span class="p">,</span> <span class="n">ty</span><span class="p">,</span> <span class="n">c</span><span class="p">)</span>
-    <span class="k">return</span> <span class="p">{</span><span class="n">labels</span><span class="p">[</span><span class="n">i</span><span class="p">]:</span> <span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">))}</span>
+<span class="n">plt</span><span class="p">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">10</span><span class="p">))</span>
+<span class="n">plt</span><span class="p">.</span><span class="n">title</span><span class="p">(</span><span class="s">"Multi Scale Domain"</span><span class="p">)</span>
+<span class="n">data</span><span class="p">.</span><span class="n">plot</span><span class="p">(</span><span class="n">plt</span><span class="p">.</span><span class="n">gca</span><span class="p">())</span>
+<span class="n">remove_axes</span><span class="p">(</span><span class="n">plt</span><span class="p">.</span><span class="n">gca</span><span class="p">())</span>
+<span class="n">plt</span><span class="p">.</span><span class="n">axis</span><span class="p">(</span><span class="s">"equal"</span><span class="p">)</span>
+
 </code></pre></div></div>
 
-<p>Next, we need a way to create the integral operator from a data batch.</p>
-
-<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">op_factory</span><span class="p">(</span><span class="n">inp</span><span class="p">):</span>
-    <span class="n">Z</span>   <span class="o">=</span> <span class="n">inp</span><span class="p">[</span><span class="s">'x'</span><span class="p">]</span>   <span class="o">+</span> <span class="mf">1j</span> <span class="o">*</span> <span class="n">inp</span><span class="p">[</span><span class="s">'y'</span><span class="p">]</span>
-    <span class="n">dZ</span>  <span class="o">=</span> <span class="n">inp</span><span class="p">[</span><span class="s">'dx'</span><span class="p">]</span>  <span class="o">+</span> <span class="mf">1j</span> <span class="o">*</span> <span class="n">inp</span><span class="p">[</span><span class="s">'dy'</span><span class="p">]</span>
-    <span class="n">ddZ</span> <span class="o">=</span> <span class="n">inp</span><span class="p">[</span><span class="s">'ddx'</span><span class="p">]</span> <span class="o">+</span> <span class="mf">1j</span> <span class="o">*</span> <span class="n">inp</span><span class="p">[</span><span class="s">'ddy'</span><span class="p">]</span>
-    <span class="n">W</span> <span class="o">=</span> <span class="n">inp</span><span class="p">[</span><span class="s">'w'</span><span class="p">]</span>
-    <span class="n">a</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="n">ones</span><span class="p">(</span><span class="n">Z</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],)</span> <span class="o">*</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="mf">1j</span>
-    <span class="k">return</span> <span class="n">StokesAdjointBoundaryOp</span><span class="p">(</span><span class="n">Z</span><span class="p">,</span> <span class="n">dZ</span><span class="p">,</span> <span class="n">ddZ</span><span class="p">,</span> <span class="n">W</span><span class="p">,</span> <span class="n">a</span><span class="p">)</span>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>(-0.05, 1.05, -1.1419995844364166, 1.101999980211258)
 </code></pre></div></div>
 
-<p>Load Data</p>
+<p><img src="/assets/posts/2023-02-27-hmm_stokes/output_3_1.png" alt="png" /></p>
 
-<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">@</span><span class="n">unpack</span>
-<span class="k">def</span> <span class="nf">to_dtype</span><span class="p">(</span><span class="n">tensor</span><span class="p">,</span> <span class="n">dtype</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">tensor</span><span class="p">.</span><span class="n">to</span><span class="p">(</span><span class="n">dtype</span><span class="p">)</span>
+<h2 id="coupling-to-micro-domain">Coupling to Micro Domain</h2>
 
-<span class="c1"># Load and transform
-</span><span class="n">data</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="n">load</span><span class="p">(</span><span class="sa">f</span><span class="s">"/home/emastr/phd/data/problem_data_riesz_TEST.torch"</span><span class="p">)</span>
-<span class="n">inp</span><span class="p">,</span> <span class="n">out</span> <span class="o">=</span> <span class="n">unpack_data</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+<p>To couple the macro domain to the microscopic domain, we make use of the HMM framework.
+We construct a set of evenly spaced micro problems based on the Stokes data. The macro problem is constructed with a pre-specified resolution in the x- and y-directions.</p>
 
-<span class="n">dtype</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="n">double</span>
-<span class="n">inp</span><span class="p">,</span> <span class="n">out</span> <span class="o">=</span> <span class="n">to_dtype</span><span class="p">(</span><span class="n">inp</span><span class="p">,</span> <span class="n">dtype</span><span class="p">),</span> <span class="n">to_dtype</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="n">dtype</span><span class="p">)</span>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Macro problem
+</span><span class="n">xDim</span> <span class="o">=</span> <span class="mi">21</span>
+<span class="n">yDim</span> <span class="o">=</span> <span class="mi">23</span>
+<span class="n">iDeg</span> <span class="o">=</span> <span class="mi">13</span> <span class="c1">#nMic*2 +1
+</span><span class="n">macro</span> <span class="o">=</span> <span class="n">StokesMacProb</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">,</span><span class="n">a</span><span class="p">:</span> <span class="n">trig_interp</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">a</span><span class="p">,</span> <span class="n">iDeg</span><span class="p">))</span>
 
-<span class="c1"># Add invariant quantities to data.
-</span><span class="n">inp</span><span class="p">.</span><span class="n">update</span><span class="p">(</span><span class="n">invariant_quantities</span><span class="p">(</span><span class="n">inp</span><span class="p">))</span>
+<span class="c1"># Micro problems
+</span><span class="n">nMic</span> <span class="o">=</span> <span class="mi">9</span>
+<span class="n">xPos</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">4</span><span class="o">*</span><span class="n">eps</span><span class="p">,</span> <span class="mi">1</span><span class="o">-</span><span class="mi">4</span><span class="o">*</span><span class="n">eps</span><span class="p">,</span> <span class="n">nMic</span><span class="p">)</span><span class="o">-</span><span class="mi">2</span><span class="o">*</span><span class="n">eps</span>
+<span class="n">micros</span> <span class="o">=</span> <span class="p">[</span><span class="n">StokesMicProb</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="mi">3</span><span class="o">*</span><span class="n">eps</span><span class="p">,</span> <span class="mi">3</span><span class="o">*</span><span class="n">eps</span><span class="p">,</span> <span class="mf">0.01</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">xPos</span><span class="p">]</span>
 
-<span class="c1"># Normalise curvature using monotone function sigmoid(x/2) - 1/2.
-</span><span class="n">inp</span><span class="p">[</span><span class="s">'c'</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span><span class="o">/</span><span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">torch</span><span class="p">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mf">0.5</span> <span class="o">*</span> <span class="n">inp</span><span class="p">[</span><span class="s">'c'</span><span class="p">]))</span> <span class="o">-</span> <span class="mf">0.5</span> 
-</code></pre></div></div>
+<span class="c1"># Hmm problem.
+</span><span class="n">hmm_prob</span> <span class="o">=</span> <span class="n">StokesHMMProblem</span><span class="p">(</span><span class="n">macro</span><span class="p">,</span> <span class="n">micros</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
 
-<p>Split into training and test data</p>
-
-<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Standard features (coordinates, derivatives of parameterisation)
-</span><span class="n">features</span> <span class="o">=</span> <span class="p">{</span><span class="s">'x'</span><span class="p">,</span> <span class="s">'y'</span><span class="p">,</span> <span class="s">'dx'</span><span class="p">,</span><span class="s">'dy'</span><span class="p">,</span><span class="s">'ddx'</span><span class="p">,</span><span class="s">'ddy'</span><span class="p">,</span><span class="s">'vx'</span><span class="p">,</span><span class="s">'vy'</span><span class="p">}</span>
-
-<span class="c1"># Invariant features (coordinates, tangent, curvature)
-</span><span class="n">features</span> <span class="o">=</span> <span class="p">{</span><span class="s">'x'</span><span class="p">,</span> <span class="s">'y'</span><span class="p">,</span> <span class="s">'tx'</span><span class="p">,</span> <span class="s">'ty'</span><span class="p">,</span> <span class="s">'c'</span><span class="p">,</span> <span class="s">'vx'</span><span class="p">,</span> <span class="s">'vy'</span><span class="p">}</span> 
-
-<span class="c1"># Reduced features (trust fourier transform to handle the rest)
-</span><span class="n">features</span> <span class="o">=</span> <span class="p">{</span><span class="s">'x'</span><span class="p">,</span> <span class="s">'y'</span><span class="p">,</span> <span class="s">'vx'</span><span class="p">,</span> <span class="s">'vy'</span><span class="p">}</span>
-
-
-<span class="c1">## TRAINING DATA
+<span class="c1">## PLOT ##
 </span>
-<span class="n">M_train</span> <span class="o">=</span> <span class="mi">200</span><span class="c1">#0
-</span><span class="n">M_batch</span> <span class="o">=</span> <span class="mi">5</span> <span class="c1"># Batch
-</span><span class="n">idx_train</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">M_train</span><span class="p">))</span>
-<span class="n">X_train</span> <span class="o">=</span> <span class="n">concat_dict_entries</span><span class="p">(</span><span class="n">subdict</span><span class="p">(</span><span class="n">subsample</span><span class="p">(</span><span class="n">inp</span><span class="p">,</span> <span class="n">idx_train</span><span class="p">),</span> <span class="n">features</span><span class="p">))</span>
-<span class="n">V_train</span> <span class="o">=</span> <span class="n">concat_dict_entries</span><span class="p">(</span><span class="n">subdict</span><span class="p">(</span><span class="n">subsample</span><span class="p">(</span><span class="n">inp</span><span class="p">,</span> <span class="n">idx_train</span><span class="p">),</span> <span class="p">{</span><span class="s">'vx'</span><span class="p">,</span> <span class="s">'vy'</span><span class="p">}))</span>
-<span class="n">Y_train</span> <span class="o">=</span> <span class="n">concat_dict_entries</span><span class="p">(</span><span class="n">subsample</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="n">idx_train</span><span class="p">))</span>
-<span class="c1">#X_train = subdict(X_train, {'vx', 'vy'})
-</span>
-<span class="c1">## TEST DATA
-</span><span class="n">M_test</span> <span class="o">=</span> <span class="mi">100</span><span class="c1">#0
-</span><span class="n">idx_test</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">M_train</span><span class="p">,</span> <span class="n">M_test</span> <span class="o">+</span> <span class="n">M_train</span><span class="p">))</span>
-<span class="n">X_test</span> <span class="o">=</span> <span class="n">concat_dict_entries</span><span class="p">(</span><span class="n">subdict</span><span class="p">(</span><span class="n">subsample</span><span class="p">(</span><span class="n">inp</span><span class="p">,</span> <span class="n">idx_test</span><span class="p">),</span> <span class="n">features</span><span class="p">))</span>
-<span class="n">V_test</span> <span class="o">=</span> <span class="n">concat_dict_entries</span><span class="p">(</span><span class="n">subdict</span><span class="p">(</span><span class="n">subsample</span><span class="p">(</span><span class="n">inp</span><span class="p">,</span> <span class="n">idx_test</span><span class="p">),</span> <span class="p">{</span><span class="s">'vx'</span><span class="p">,</span> <span class="s">'vy'</span><span class="p">}))</span>
-<span class="n">Y_test</span> <span class="o">=</span> <span class="n">concat_dict_entries</span><span class="p">(</span><span class="n">subsample</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="n">idx_test</span><span class="p">))</span>
-<span class="c1">#X_test = subdict(X_test, {'vx', 'vy'})
-</span>
-<span class="n">in_channels</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">features</span><span class="p">)</span>
-<span class="n">out_channels</span> <span class="o">=</span> <span class="mi">2</span>
+<span class="n">plt</span><span class="p">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span><span class="mi">5</span><span class="p">))</span>
+
+<span class="n">plt</span><span class="p">.</span><span class="n">subplot2grid</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span><span class="mi">4</span><span class="p">),</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">),</span> <span class="n">colspan</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">plt</span><span class="p">.</span><span class="n">title</span><span class="p">(</span><span class="s">"Multi Scale Problem"</span><span class="p">)</span>
+<span class="n">hmm_prob</span><span class="p">.</span><span class="n">plot</span><span class="p">(</span><span class="n">plt</span><span class="p">.</span><span class="n">gca</span><span class="p">())</span>
+<span class="n">plt</span><span class="p">.</span><span class="n">axis</span><span class="p">(</span><span class="s">"Equal"</span><span class="p">)</span>
+<span class="n">remove_axes</span><span class="p">(</span><span class="n">plt</span><span class="p">.</span><span class="n">gca</span><span class="p">())</span>
+
+<span class="n">plt</span><span class="p">.</span><span class="n">subplot2grid</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span><span class="mi">4</span><span class="p">),</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span> <span class="n">colspan</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+<span class="n">plt</span><span class="p">.</span><span class="n">title</span><span class="p">(</span><span class="s">"Micro Problem Positions"</span><span class="p">)</span>
+<span class="n">hmm_prob</span><span class="p">.</span><span class="n">plot</span><span class="p">(</span><span class="n">plt</span><span class="p">.</span><span class="n">gca</span><span class="p">())</span>
+<span class="n">plt</span><span class="p">.</span><span class="n">axis</span><span class="p">(</span><span class="s">"Equal"</span><span class="p">)</span>
+<span class="n">remove_axes</span><span class="p">(</span><span class="n">plt</span><span class="p">.</span><span class="n">gca</span><span class="p">())</span>
+<span class="n">plt</span><span class="p">.</span><span class="n">xlim</span><span class="p">([</span><span class="o">-</span><span class="n">eps</span><span class="p">,</span><span class="mi">1</span> <span class="o">+</span> <span class="n">eps</span><span class="p">])</span>
+<span class="n">plt</span><span class="p">.</span><span class="n">ylim</span><span class="p">([</span><span class="o">-</span><span class="mi">1</span><span class="o">-</span><span class="mi">1</span><span class="o">*</span><span class="n">eps</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="o">+</span><span class="mi">6</span><span class="o">*</span><span class="n">eps</span><span class="p">])</span>
 </code></pre></div></div>
 
-<p>Create network</p>
-
-<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">settings</span> <span class="o">=</span> <span class="p">{</span><span class="s">"modes"</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
-            <span class="s">"input_features"</span><span class="p">:</span> <span class="n">features</span><span class="p">}</span>
-
-<span class="n">net</span> <span class="o">=</span> <span class="n">FNO1d</span><span class="p">(</span><span class="n">modes</span><span class="o">=</span><span class="n">settings</span><span class="p">[</span><span class="s">"modes"</span><span class="p">],</span> <span class="n">in_channels</span><span class="o">=</span><span class="n">in_channels</span><span class="p">,</span> <span class="n">out_channels</span><span class="o">=</span><span class="n">out_channels</span><span class="p">)</span>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>(-1.02, -0.88)
 </code></pre></div></div>
 
-<p>Do training</p>
+<p><img src="/assets/posts/2023-02-27-hmm_stokes/output_5_1.png" alt="png" /></p>
 
-<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Predefine list of losses 
-</span><span class="n">trainloss</span> <span class="o">=</span> <span class="p">[]</span>
-<span class="n">testloss</span>  <span class="o">=</span> <span class="p">[]</span>
-</code></pre></div></div>
+<h2 id="solving-using-hmm-iterations">Solving using HMM iterations</h2>
 
-<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># Loss function
-</span><span class="n">loss_fcn</span>  <span class="o">=</span> <span class="n">nn</span><span class="p">.</span><span class="n">MSELoss</span><span class="p">()</span>
-<span class="n">benchloss</span> <span class="o">=</span> <span class="n">loss_fcn</span><span class="p">(</span><span class="n">V_test</span><span class="p">,</span> <span class="n">Y_test</span><span class="p">).</span><span class="n">item</span><span class="p">()</span>
-<span class="n">optim</span>     <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="n">optim</span><span class="p">.</span><span class="n">Adam</span><span class="p">(</span><span class="n">net</span><span class="p">.</span><span class="n">parameters</span><span class="p">())</span>
+<p>To solve the problem, we make use of a sequence of micro solvers, as well as a micro solver.</p>
 
-<span class="c1"># DO TRAINING LOOP 
-##################################################
-</span><span class="n">N</span> <span class="o">=</span> <span class="mi">30001</span> <span class="c1">#30001
-</span><span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">N</span><span class="p">):</span>
-    <span class="n">idx_batch</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="n">randperm</span><span class="p">(</span><span class="n">M_train</span><span class="p">)[:</span><span class="n">M_batch</span><span class="p">]</span> 
-    <span class="n">Y_batch</span>   <span class="o">=</span> <span class="n">Y_train</span><span class="p">[</span><span class="n">idx_batch</span><span class="p">]</span>
-    <span class="n">X_batch</span>   <span class="o">=</span> <span class="n">X_train</span><span class="p">[</span><span class="n">idx_batch</span><span class="p">]</span>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">Callback</span><span class="p">():</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">macro</span><span class="p">):</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">N</span> <span class="o">=</span> <span class="mi">100</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="bp">self</span><span class="p">.</span><span class="n">N</span><span class="p">)</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">macro</span> <span class="o">=</span> <span class="n">macro</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">current_alpha</span> <span class="o">=</span> <span class="n">macro</span><span class="p">.</span><span class="n">alpha</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">x</span><span class="p">)</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">diff</span> <span class="o">=</span> <span class="p">[]</span>
     
-    <span class="c1"># Train on truncated net that expands as iterations progress
-</span>    <span class="n">loss</span> <span class="o">=</span> <span class="n">loss_fcn</span><span class="p">(</span><span class="n">net</span><span class="p">(</span><span class="n">X_batch</span><span class="p">),</span> <span class="n">Y_batch</span><span class="p">)</span>
-    <span class="n">loss</span><span class="p">.</span><span class="n">backward</span><span class="p">()</span>
-    <span class="n">optim</span><span class="p">.</span><span class="n">step</span><span class="p">()</span>
+    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">it</span><span class="p">,</span> <span class="n">macro_sol</span><span class="p">,</span> <span class="n">micro_sols</span><span class="p">):</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">previous_alpha</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">current_alpha</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">current_alpha</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">macro</span><span class="p">.</span><span class="n">alpha</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">x</span><span class="p">)</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">diff</span><span class="p">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="n">linalg</span><span class="p">.</span><span class="n">norm</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">previous_alpha</span> <span class="o">-</span> <span class="bp">self</span><span class="p">.</span><span class="n">current_alpha</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="p">.</span><span class="n">N</span><span class="o">**</span><span class="mf">0.5</span><span class="p">)</span>
         
-    <span class="n">trainloss</span><span class="p">.</span><span class="n">append</span><span class="p">(</span><span class="n">loss</span><span class="p">.</span><span class="n">item</span><span class="p">())</span>
-    <span class="n">testloss</span><span class="p">.</span><span class="n">append</span><span class="p">(</span><span class="n">loss_fcn</span><span class="p">(</span><span class="n">net</span><span class="p">(</span><span class="n">X_test</span><span class="p">),</span> <span class="n">Y_test</span><span class="p">).</span><span class="n">item</span><span class="p">())</span>
-        
-    <span class="n">optim</span><span class="p">.</span><span class="n">zero_grad</span><span class="p">()</span>
-        
-    <span class="k">print</span><span class="p">(</span><span class="sa">f</span><span class="s">"Step </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s">. Train loss = </span><span class="si">{</span><span class="n">trainloss</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s">, test loss = </span><span class="si">{</span><span class="n">testloss</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s">, benchmark=</span><span class="si">{</span><span class="n">benchloss</span><span class="si">}</span><span class="s">"</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s">"</span><span class="se">\r</span><span class="s">"</span><span class="p">)</span>
-    
-    <span class="k">if</span> <span class="n">i</span> <span class="o">%</span> <span class="mi">1000</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="n">torch</span><span class="p">.</span><span class="n">save</span><span class="p">({</span><span class="s">"state dict"</span> <span class="p">:</span> <span class="n">net</span><span class="p">.</span><span class="n">state_dict</span><span class="p">(),</span> 
-                    <span class="s">"settings"</span>   <span class="p">:</span> <span class="n">settings</span><span class="p">,</span>
-                    <span class="s">"trainloss"</span>  <span class="p">:</span> <span class="n">trainloss</span><span class="p">,</span>
-                    <span class="s">"testloss"</span>   <span class="p">:</span> <span class="n">testloss</span><span class="p">},</span> 
-                    <span class="sa">f</span><span class="s">"/home/emastr/phd/data/fno_adjoint_state_dict_2022_12_02_default5_</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s">.Torch"</span><span class="p">)</span> <span class="c1"># old namme unet_state_dict #Kernel size 5, stride 2
+<span class="n">debug_cb</span> <span class="o">=</span> <span class="n">Callback</span><span class="p">(</span><span class="n">macro</span><span class="p">)</span>
+
+<span class="k">print</span><span class="p">(</span><span class="s">"Precomputing..."</span><span class="p">)</span>
+<span class="n">macro_solver</span> <span class="o">=</span> <span class="n">MacroSolver</span><span class="p">(</span><span class="n">xDim</span><span class="p">,</span> <span class="n">yDim</span><span class="p">)</span>
+<span class="n">micro_solvers</span> <span class="o">=</span> <span class="p">[</span><span class="n">MicroSolver</span><span class="p">(</span><span class="n">m</span><span class="p">)</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">micros</span><span class="p">]</span>
+<span class="n">hmm_solver</span> <span class="o">=</span> <span class="n">IterativeHMMSolver</span><span class="p">(</span><span class="n">macro_solver</span><span class="p">,</span> <span class="n">micro_solvers</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="s">"Done"</span><span class="p">)</span>
+
+
+<span class="k">print</span><span class="p">(</span><span class="s">"HMM Solver..."</span><span class="p">)</span>
+<span class="n">macro_guess</span> <span class="o">=</span> <span class="n">macro_solver</span><span class="p">.</span><span class="n">solve</span><span class="p">(</span><span class="n">macro</span><span class="p">)</span>
+<span class="p">(</span><span class="n">macro_sol</span><span class="p">,</span> <span class="n">micro_sols</span><span class="p">)</span> <span class="o">=</span> <span class="n">hmm_solver</span><span class="p">.</span><span class="n">solve</span><span class="p">(</span><span class="n">hmm_prob</span><span class="p">,</span> <span class="n">macro_guess</span><span class="o">=</span><span class="n">macro_guess</span><span class="p">,</span> 
+                                           <span class="n">callback</span><span class="o">=</span><span class="n">debug_cb</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">maxiter</span><span class="o">=</span><span class="mi">7</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="s">"</span><span class="se">\n</span><span class="s">Done"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Precomputing...
+Done
+HMM Solver...
+Step 6/7
+Done
+</code></pre></div></div>
+
+<h2 id="convergence-study-for-slip-coefficient">Convergence study for slip coefficient</h2>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">plt</span><span class="p">.</span><span class="n">figure</span><span class="p">()</span>
+<span class="n">plt</span><span class="p">.</span><span class="n">title</span><span class="p">(</span><span class="s">"RMS of difference between iterates"</span><span class="p">)</span>
+<span class="n">plt</span><span class="p">.</span><span class="n">semilogy</span><span class="p">(</span><span class="n">debug_cb</span><span class="p">.</span><span class="n">diff</span><span class="p">,</span> <span class="s">'b*--'</span><span class="p">)</span>
+<span class="n">plt</span><span class="p">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s">"Iterate n"</span><span class="p">)</span>
+<span class="n">plt</span><span class="p">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s">"RMS of a_n - a_(n+1)"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Text(0, 0.5, 'RMS of a_n - a_(n+1)')
+</code></pre></div></div>
+
+<p><img src="/assets/posts/2023-02-27-hmm_stokes/output_9_1.png" alt="png" /></p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">plt</span><span class="p">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span><span class="mi">10</span><span class="p">))</span>
+
+<span class="n">plt</span><span class="p">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">121</span><span class="p">)</span>
+<span class="n">plt</span><span class="p">.</span><span class="n">axis</span><span class="p">(</span><span class="s">"equal"</span><span class="p">)</span>
+<span class="n">hmm_prob</span><span class="p">.</span><span class="n">plot</span><span class="p">(</span><span class="n">plt</span><span class="p">.</span><span class="n">gca</span><span class="p">())</span>
+<span class="n">macro_sol</span><span class="p">.</span><span class="n">u</span><span class="p">.</span><span class="n">plot</span><span class="p">(</span><span class="n">plt</span><span class="p">.</span><span class="n">gca</span><span class="p">())</span>
+<span class="n">macro_sol</span><span class="p">.</span><span class="n">plot_stream</span><span class="p">(</span><span class="n">plt</span><span class="p">.</span><span class="n">gca</span><span class="p">(),</span> <span class="n">color</span><span class="o">=</span><span class="s">"white"</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="p">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">122</span><span class="p">)</span>
+<span class="n">micros</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="n">plot</span><span class="p">(</span><span class="n">plt</span><span class="p">.</span><span class="n">gca</span><span class="p">())</span>
+<span class="n">micros</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="n">geom</span><span class="p">.</span><span class="n">plot_field_on_boundary</span><span class="p">(</span><span class="n">plt</span><span class="p">.</span><span class="n">gca</span><span class="p">(),</span> <span class="n">micros</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="n">condition</span><span class="p">)</span>
+<span class="n">plt</span><span class="p">.</span><span class="n">axis</span><span class="p">(</span><span class="s">"equal"</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="p">.</span><span class="n">figure</span><span class="p">()</span>
+<span class="n">plt</span><span class="p">.</span><span class="n">title</span><span class="p">(</span><span class="s">"Alpha"</span><span class="p">)</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">100</span><span class="p">)</span>
+<span class="n">a</span> <span class="o">=</span> <span class="n">macro</span><span class="p">.</span><span class="n">alpha</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="n">xm</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">array</span><span class="p">([</span><span class="n">sol</span><span class="p">.</span><span class="n">x</span> <span class="k">for</span> <span class="n">sol</span> <span class="ow">in</span> <span class="n">micro_sols</span><span class="p">])</span>
+<span class="n">am</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">array</span><span class="p">([</span><span class="n">sol</span><span class="p">.</span><span class="n">alpha</span> <span class="k">for</span> <span class="n">sol</span> <span class="ow">in</span> <span class="n">micro_sols</span><span class="p">])</span>
+<span class="n">plt</span><span class="p">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">a</span><span class="p">)</span>
+<span class="n">plt</span><span class="p">.</span><span class="n">plot</span><span class="p">(</span><span class="n">xm</span><span class="p">,</span> <span class="n">am</span><span class="p">)</span>
+<span class="c1">#print(macro.alpha)
+</span>
+<span class="c1">#plt.figure(figsize=(10,6))
+#plt.title("Condition")
+#t = np.linspace(0,2*np.pi, 300)
+#v = micros[0].condition(t)
+#plt.plot(t, np.real(v))
+#plt.plot(t, np.imag(v))
+#plt.xlim([1,3])
 </span></code></pre></div></div>
 
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Step 30000. Train loss = 0.00014250755874667165, test loss = 0.0002593944797511047, benchmark=0.0248016101648704522
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>[&lt;matplotlib.lines.Line2D at 0x7fa5cd550100&gt;]
 </code></pre></div></div>
 
-<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">save</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="n">load</span><span class="p">(</span><span class="sa">f</span><span class="s">"/home/emastr/phd/data/fno_adjoint_state_dict_2022_12_02_default5_</span><span class="si">{</span><span class="mi">30000</span><span class="si">}</span><span class="s">.Torch"</span><span class="p">)</span>
-<span class="n">trainloss</span> <span class="o">=</span> <span class="n">save</span><span class="p">[</span><span class="s">"trainloss"</span><span class="p">]</span>
-<span class="n">testloss</span> <span class="o">=</span> <span class="n">save</span><span class="p">[</span><span class="s">"testloss"</span><span class="p">]</span>
-<span class="n">net</span><span class="p">.</span><span class="n">load_state_dict</span><span class="p">(</span><span class="n">save</span><span class="p">[</span><span class="s">"state dict"</span><span class="p">])</span>
+<p><img src="/assets/posts/2023-02-27-hmm_stokes/output_10_1.png" alt="png" /></p>
+
+<p><img src="/assets/posts/2023-02-27-hmm_stokes/output_10_2.png" alt="png" /></p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">from</span> <span class="nn">scipy.io</span> <span class="kn">import</span> <span class="n">loadmat</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="n">plt</span>
+
+<span class="n">matf</span> <span class="o">=</span> <span class="n">loadmat</span><span class="p">(</span><span class="s">"/home/emastr/phd/data/reference/run_24.mat"</span><span class="p">,</span> <span class="n">struct_as_record</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="n">info</span> <span class="o">=</span> <span class="n">matf</span><span class="p">[</span><span class="s">'info'</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">Uc</span> <span class="o">=</span> <span class="n">info</span><span class="p">[</span><span class="s">'Uc'</span><span class="p">]</span>
+<span class="n">Vc</span> <span class="o">=</span> <span class="n">info</span><span class="p">[</span><span class="s">'Vc'</span><span class="p">]</span>
+<span class="n">mask</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">Uc</span><span class="p">)</span>
+<span class="n">Uc</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">where</span><span class="p">(</span><span class="n">mask</span><span class="p">,</span> <span class="o">-</span><span class="n">np</span><span class="p">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">Uc</span><span class="p">),</span> <span class="n">Uc</span><span class="p">)</span>
+<span class="n">X</span> <span class="o">=</span> <span class="n">info</span><span class="p">[</span><span class="s">'X'</span><span class="p">]</span>
+<span class="n">Y</span> <span class="o">=</span> <span class="n">info</span><span class="p">[</span><span class="s">'Y'</span><span class="p">]</span>
+
+<span class="n">plt</span><span class="p">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span><span class="mi">5</span><span class="p">))</span>
+<span class="n">plt</span><span class="p">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">Uc</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="p">::</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">vmin</span><span class="o">=-</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">vmax</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+<span class="n">plt</span><span class="p">.</span><span class="n">ylim</span><span class="p">([</span><span class="mi">220</span><span class="p">,</span> <span class="mi">100</span><span class="p">])</span>
+
 </code></pre></div></div>
 
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;All keys matched successfully&gt;
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>(220.0, 100.0)
 </code></pre></div></div>
 
-<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">Y_net</span> <span class="o">=</span> <span class="n">net</span><span class="p">(</span><span class="n">X_test</span><span class="p">)</span>
-<span class="n">Y_net</span> <span class="o">=</span> <span class="n">Y_net</span><span class="p">.</span><span class="n">detach</span><span class="p">()</span>
-<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">90</span><span class="p">]:</span>
-    <span class="n">plt</span><span class="p">.</span><span class="n">figure</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
-    <span class="n">plt</span><span class="p">.</span><span class="n">plot</span><span class="p">(</span><span class="n">V_test</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="p">:],</span> <span class="n">label</span><span class="o">=</span><span class="s">'inpx'</span><span class="p">)</span>
-    <span class="n">plt</span><span class="p">.</span><span class="n">plot</span><span class="p">(</span><span class="n">Y_net</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="p">:],</span> <span class="n">label</span><span class="o">=</span><span class="s">'netx'</span><span class="p">)</span>
-    <span class="n">plt</span><span class="p">.</span><span class="n">plot</span><span class="p">(</span><span class="n">Y_test</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="p">:],</span> <span class="s">'--'</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s">'outx'</span><span class="p">)</span>
-    <span class="n">plt</span><span class="p">.</span><span class="n">legend</span><span class="p">()</span>
-    <span class="n">plt</span><span class="p">.</span><span class="n">figure</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
-    <span class="n">plt</span><span class="p">.</span><span class="n">plot</span><span class="p">(</span><span class="n">V_test</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="p">:])</span>
-    <span class="n">plt</span><span class="p">.</span><span class="n">plot</span><span class="p">(</span><span class="n">Y_net</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="p">:])</span>
-    <span class="n">plt</span><span class="p">.</span><span class="n">plot</span><span class="p">(</span><span class="n">Y_test</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="p">:])</span>
-    
-<span class="n">plt</span><span class="p">.</span><span class="n">figure</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
-<span class="n">plt</span><span class="p">.</span><span class="n">semilogy</span><span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">trainloss</span><span class="p">)),</span> <span class="n">trainloss</span><span class="p">)</span>
-<span class="n">plt</span><span class="p">.</span><span class="n">semilogy</span><span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">testloss</span><span class="p">)),</span> <span class="n">testloss</span><span class="p">)</span>
+<p><img src="/assets/posts/2023-02-27-hmm_stokes/output_11_1.png" alt="png" /></p>
 
-<span class="n">plt</span><span class="p">.</span><span class="n">figure</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
-<span class="n">plt</span><span class="p">.</span><span class="n">plot</span><span class="p">(</span><span class="n">inp</span><span class="p">[</span><span class="s">'x'</span><span class="p">][</span><span class="mi">0</span><span class="p">,</span> <span class="p">:],</span> <span class="n">inp</span><span class="p">[</span><span class="s">'y'</span><span class="p">][</span><span class="mi">0</span><span class="p">,</span> <span class="p">:])</span>
-<span class="n">plt</span><span class="p">.</span><span class="n">quiver</span><span class="p">(</span><span class="n">inp</span><span class="p">[</span><span class="s">'x'</span><span class="p">][</span><span class="mi">0</span><span class="p">,:],</span> <span class="n">inp</span><span class="p">[</span><span class="s">'y'</span><span class="p">][</span><span class="mi">0</span><span class="p">,:],</span> <span class="n">inp</span><span class="p">[</span><span class="s">'dy'</span><span class="p">][</span><span class="mi">0</span><span class="p">,:],</span> <span class="o">-</span><span class="n">inp</span><span class="p">[</span><span class="s">'dx'</span><span class="p">][</span><span class="mi">0</span><span class="p">,:])</span>
-<span class="n">plt</span><span class="p">.</span><span class="n">quiver</span><span class="p">(</span><span class="n">inp</span><span class="p">[</span><span class="s">'x'</span><span class="p">][</span><span class="mi">0</span><span class="p">,:],</span> <span class="n">inp</span><span class="p">[</span><span class="s">'y'</span><span class="p">][</span><span class="mi">0</span><span class="p">,:],</span> <span class="n">inp</span><span class="p">[</span><span class="s">'ddx'</span><span class="p">][</span><span class="mi">0</span><span class="p">,:],</span> <span class="n">inp</span><span class="p">[</span><span class="s">'ddy'</span><span class="p">][</span><span class="mi">0</span><span class="p">,:],</span> <span class="n">color</span><span class="o">=</span><span class="s">'red'</span><span class="p">)</span>
-<span class="n">plt</span><span class="p">.</span><span class="n">axis</span><span class="p">(</span><span class="s">"equal"</span><span class="p">)</span>
-</code></pre></div></div>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
 
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>(-0.8800000131130219,
- 0.8800000131130219,
- -0.6743489861488342,
- 1.0797309041023255)
-</code></pre></div></div>
-
-<p><img src="/assets/posts/output_16_1.png" alt="png" /></p>
-
-<p><img src="/assets/posts/output_16_2.png" alt="png" /></p>
-
-<p><img src="/assets/posts/output_16_3.png" alt="png" /></p>
-
-<p><img src="/assets/posts/output_16_4.png" alt="png" /></p>]]></content><author><name>Emanuel</name></author><category term="fno" /><category term="ml" /><category term="neural" /><category term="nn" /><summary type="html"><![CDATA[Micro Domain]]></summary></entry><entry><title type="html">Welcome to Jekyll!</title><link href="http://localhost:4000/jekyll/update/2022/10/25/welcome-to-jekyll-copy-2.html" rel="alternate" type="text/html" title="Welcome to Jekyll!" /><published>2022-10-25T23:34:51+02:00</published><updated>2022-10-25T23:34:51+02:00</updated><id>http://localhost:4000/jekyll/update/2022/10/25/welcome-to-jekyll%20copy%202</id><content type="html" xml:base="http://localhost:4000/jekyll/update/2022/10/25/welcome-to-jekyll-copy-2.html"><![CDATA[<p>You’ll find this post in your <code class="language-plaintext highlighter-rouge">_posts</code> directory. Go ahead and edit it and re-build the site to see your changes. You can rebuild the site in many different ways, but the most common way is to run <code class="language-plaintext highlighter-rouge">jekyll serve</code>, which launches a web server and auto-regenerates your site when a file is updated.</p>
+</code></pre></div></div>]]></content><author><name>Emanuel</name></author><category term="hmm" /><category term="solver" /><category term="iterative" /><summary type="html"><![CDATA[Showcase of HMM on periodic stokes flow.]]></summary></entry><entry><title type="html">Welcome to Jekyll!</title><link href="http://localhost:4000/jekyll/update/2022/10/25/welcome-to-jekyll-copy-2.html" rel="alternate" type="text/html" title="Welcome to Jekyll!" /><published>2022-10-25T23:34:51+02:00</published><updated>2022-10-25T23:34:51+02:00</updated><id>http://localhost:4000/jekyll/update/2022/10/25/welcome-to-jekyll%20copy%202</id><content type="html" xml:base="http://localhost:4000/jekyll/update/2022/10/25/welcome-to-jekyll-copy-2.html"><![CDATA[<p>You’ll find this post in your <code class="language-plaintext highlighter-rouge">_posts</code> directory. Go ahead and edit it and re-build the site to see your changes. You can rebuild the site in many different ways, but the most common way is to run <code class="language-plaintext highlighter-rouge">jekyll serve</code>, which launches a web server and auto-regenerates your site when a file is updated.</p>
 
 <p>Jekyll requires blog post files to be named according to the following format:</p>
 
@@ -504,7 +482,7 @@
 
 <p><img src="/assets/posts/output_16_3.png" alt="png" /></p>
 
-<p><img src="/assets/posts/output_16_4.png" alt="png" /></p>]]></content><author><name>Emanuel</name></author><category term="fno" /><category term="ml" /><category term="neural" /><category term="nn" /><summary type="html"><![CDATA[Showcase of FNO on riesz representor data.]]></summary></entry><entry><title type="html">Fourier Neural Operator 3</title><link href="http://localhost:4000/fno/ml/neural/nn/2022/10/25/fno-copy-4.html" rel="alternate" type="text/html" title="Fourier Neural Operator 3" /><published>2022-10-25T23:34:51+02:00</published><updated>2022-10-25T23:34:51+02:00</updated><id>http://localhost:4000/fno/ml/neural/nn/2022/10/25/fno%20copy%204</id><content type="html" xml:base="http://localhost:4000/fno/ml/neural/nn/2022/10/25/fno-copy-4.html"><![CDATA[<h2 id="micro-domain">Micro Domain</h2>
+<p><img src="/assets/posts/output_16_4.png" alt="png" /></p>]]></content><author><name>Emanuel</name></author><category term="fno" /><category term="ml" /><category term="neural" /><category term="nn" /><summary type="html"><![CDATA[Showcase of FNO on riesz representor data.]]></summary></entry><entry><title type="html">Fourier Neural Operator</title><link href="http://localhost:4000/fno/ml/neural/nn/2022/10/25/fno.html" rel="alternate" type="text/html" title="Fourier Neural Operator" /><published>2022-10-25T23:34:51+02:00</published><updated>2022-10-25T23:34:51+02:00</updated><id>http://localhost:4000/fno/ml/neural/nn/2022/10/25/fno</id><content type="html" xml:base="http://localhost:4000/fno/ml/neural/nn/2022/10/25/fno.html"><![CDATA[<h2 id="micro-domain">Micro Domain</h2>
 
 <p>The micro domain is defined by a bounding box and a smooth function parameterising the floor of the micro domain.</p>
 
@@ -741,4 +719,4 @@
 
 <p><img src="/assets/posts/output_16_3.png" alt="png" /></p>
 
-<p><img src="/assets/posts/output_16_4.png" alt="png" /></p>]]></content><author><name>Emanuel</name></author><category term="fno" /><category term="ml" /><category term="neural" /><category term="nn" /><summary type="html"><![CDATA[Showcase of FNO on riesz representor data.]]></summary></entry></feed>
+<p><img src="/assets/posts/output_16_4.png" alt="png" /></p>]]></content><author><name>Emanuel</name></author><category term="fno" /><category term="ml" /><category term="neural" /><category term="nn" /><summary type="html"><![CDATA[Fourier Neural Operator. Nuff said.]]></summary></entry></feed>

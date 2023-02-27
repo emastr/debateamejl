@@ -1,0 +1,18 @@
+
+# Get the button element
+#button = document.getElementByClass("site-title")
+
+# Function to generate a random RGB color value
+#getRandomColor = ->
+  #r = Math.floor(Math.random() * 256)
+  #g = Math.floor(Math.random() * 256)
+  #b = Math.floor(Math.random() * 256)
+  #"rgb(#{r}, #{g}, #{b})"
+
+# Set the background color of the button to a random color when hovered over
+#button.addEventListener "mouseover", ->
+  #button.style.backgroundColor = getRandomColor()
+
+
+
+<script src="{{ 'assets/js/index.js' | relative_url }}"></script>
