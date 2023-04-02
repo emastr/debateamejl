@@ -1,0 +1,24 @@
+
+default_user:
+    user: default_user
+    title: DEFAULT
+    author: DEFAULT
+    logo: icon.svg
+    home: home.html
+    header_pages: [home.html]
+
+emastr:
+    user: emastr
+    title: Emme-Bemme
+    author: Emanuel
+    logo: icon_emastr.svg
+    home: /emastr/
+    header_pages: [index.markdown, home_emastr.html, about_emastr.markdown]
+
+leon:
+    user: leon
+    title: Klingen
+    author: Leon
+    home: /leon/
+    header_pages: [home_leon.html]
+    logo: icon_leon.svg
