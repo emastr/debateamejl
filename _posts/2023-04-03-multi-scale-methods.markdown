@@ -17,7 +17,7 @@ math: true
 Below is a list of useful literature on the subject, along with comments.
 
 #### Literature
-   * Introduction to multi scale problems by Runborg et al.
-        https://link.springer.com/book/10.1007/978-3-540-88857-4
+   * [Introduction to multi scale problems by Runborg et al.][https://link.springer.com/book/10.1007/978-3-540-88857-4]
 
+    
     
