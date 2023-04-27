@@ -1,0 +1,32 @@
+---
+layout: post
+title:  "Spectral Robin Solvers"
+date:   2023-02-26 23:34:51 +0200
+categories: multiscale
+author: Emanuel
+featured: true
+thumbnail: "/assets/posts/2023-02-27-hmm_stokes/thumb.png"
+description: "Spectral solver for Stokes with non-homogeneous, Robin boundary condition with variable coefficients."
+math: true
+---
+
+
+# Jämförelse HMM - FEM - Randintegralmetod
+
+Nedan visas diskretiseringen av domänen för de olika metoderna
+
+## Grov FEM-lösning:
+Vi löser med FEniCS, periodiska randvillkor i x-riktningen. Den streckade linjen visar var vi ska evaluera lösningarna för jämförelsen.
+![png](/assets/posts/2023-04-27-olof_mail/domain_FEM_low.png)  
+
+### Fin FEM-lösning:  
+![png](/assets/posts/2023-04-27-olof_mail/domain_FEM.png)
+
+### HMM-lösning
+Spektral metod med Navier-slip koppling mellan mikro och makro, 5 st mikroproblem, vardera med storleken 5.13 epsilon (för att undvika heltal så att frekvensen matchas exakt)
+![png](/assets/posts/2023-04-27-olof_mail/domain_hmm.png)
+
+
+### Lösning
+Nedan visas lösningarna längsmed den streckade linjen i figur 1. 
+![png](/assets/posts/2023-04-27-olof_mail/domain_line.png)
