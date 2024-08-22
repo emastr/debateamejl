@@ -29,8 +29,14 @@ Main goals
      8) New training, new geometry, new data gen, Arc - RMSE = 
     a vs b shows high variance data, b vs c vs d shows parameterization, b vs e shows new geometry,  
 2) Second draft
-   1) Figures are done 
-   2) 
+   * Figures are done 
+   * Theory
+      1) Computational complexity
+      2) Stability of iterations
 3) New direction
-
+    * Multiscale methods for Fredholm integral equations - Book
+    * Homogenization of integral operators on rough surfaces
+      * Possible colab with phillip scholl
+    * Reinforcement learning, game theory perspective on optimization 
+    * Natural gradient boosting (marius, also open to other collab)
 
