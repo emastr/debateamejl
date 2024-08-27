@@ -21,9 +21,9 @@ Main goals
    * TODO:
      * a) Old training, old geometry, old data gen, G-L - RMSE = 1% error
      * b) Old training, old geometry, old data gen, both riesz, G-L - RMSE = 2%
-     * c) Old training, old geometry, new data gen, G-L - RMSE = 
-     * d) Old training, old geometry, new data gen, Uni - RMSE = 
-     * e) Old training, old geometry, new data gen, Arc - RMSE = 
+     * c) Old training, old geometry, new data gen, G-L - RMSE = 8%
+     * d) Old training, old geometry, new data gen, Arc - RMSE = 7%
+     * e) Old training, old geometry, new data gen, Uni - RMSE = 
      * f) Old training, new geometry, new data gen, G-L - RMSE = 
      * g) Old training, new geometry, new data gen, Uni - RMSE = 
      * h) New training, new geometry, new data gen, G-L - RMSE = 
